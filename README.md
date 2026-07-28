@@ -65,3 +65,14 @@ The landing page at `docs/index.html` is standalone. Update it with your own log
 ## Deployment
 
 The `.github/workflows/deploy-wiki.yml` workflow builds and deploys to GitHub Pages on push to main. The built artifact includes both the landing page and the wiki.
+
+## License
+
+[AGPL 3.0](LICENSE)
+
+## Dependencies
+
+| Package | License |
+|---------|---------|
+| [markdown-it](https://github.com/markdown-it/markdown-it) | MIT |
+| [flexsearch](https://github.com/nextapps-de/flexsearch) | Apache 2.0 |
