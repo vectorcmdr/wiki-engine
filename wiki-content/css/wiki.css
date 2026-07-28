@@ -347,6 +347,7 @@ img { max-width: 100%; border: 1px solid var(--border-default); }
   color: var(--text-faint);
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  background: var(--bg-primary);
 }
 .footer-left { justify-self: start; }
 .footer-center { justify-self: center; text-align: center; text-transform: none; }
