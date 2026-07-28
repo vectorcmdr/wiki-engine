@@ -10,13 +10,13 @@ npm install
 npm run build
 ```
 
-Serve from the project root:
+Serve locally:
 
 ```bash
-npx serve .
+npx serve docs/
 ```
 
-Open `http://localhost:3000/docs/wiki/`.
+Open `http://localhost:3000/`. (You can also serve from the project root with `npx serve .` and open `http://localhost:3000/docs/`.)
 
 ## Structure
 
