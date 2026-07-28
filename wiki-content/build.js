@@ -655,11 +655,12 @@ async function main() {
     console.log("  copied: js/");
   }
 
-  // Copy editor with emoji map injected
+  // Copy editor with emoji map and baseHref injected
   const editorSource = resolve(__dirname, "editor", "index.html");
   const editorDest = resolve(outputDir, "editor.html");
   if (existsSync(editorSource)) {
     let editorHtml = readFileSync(editorSource, "utf-8");
+    editorHtml = editorHtml.replace(/\{BASE_HREF\}/g, config.baseHref || "");
     // Read and inject the emoji map
     const emojiMapPath = resolve(__dirname, "lib", "emoji-map-embed.js");
     if (existsSync(emojiMapPath)) {
