@@ -16,7 +16,7 @@ Serve locally:
 npx serve docs/
 ```
 
-Open `http://localhost:3000/`. (You can also serve from the project root with `npx serve .` and open `http://localhost:3000/docs/`.)
+Open `http://localhost:3000/`. (The `baseHref` in the config is set for GitHub Pages deployment. For local testing, change it to `/docs/wiki` in `wiki-content/wiki.config.js`.)
 
 ## Structure
 

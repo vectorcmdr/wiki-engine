@@ -10,7 +10,7 @@ export default {
 
   // Path prefix for all asset URLs. On GitHub Pages this is /repo-name/wiki.
   // For local testing with "npx serve ." from wiki root, set to /docs/wiki.
-  baseHref: "/wiki",
+  baseHref: "/wiki-engine/wiki",
 
   wikiName: "WIKI ENGINE",
   navLinks: [
