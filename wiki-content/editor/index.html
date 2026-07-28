@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wiki Engine Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Noto+Emoji&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #e8e4de;
+      --bg-surface: #ddd9d2;
+      --bg-surface-hover: #d0ccc5;
+      --bg-elevated: #f0ece6;
+      --border-default: #222222;
+      --border-subtle: #555555;
+      --border-accent: #111111;
+      --text-primary: #0a0a0a;
+      --text-body: #1a1a1a;
+      --text-muted: #4a4a4a;
+      --text-faint: #777777;
+      --accent: #111111;
+      --accent-red: #990000;
+      --accent-green: #2a5a2a;
+      --accent-blue: #2a4a6a;
+      --code-bg: #d5d1ca;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 13px; }
+    body {
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      background-color: var(--bg-primary);
+      background-image: radial-gradient(circle, #c8c4bd 1px, transparent 1px);
+      background-size: 16px 16px;
+      color: var(--text-body);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: var(--accent-red); text-decoration: none; }
+    a:hover { text-decoration: underline; text-shadow: 0 0 8px var(--accent-red-glow); }
+
+    /* Topbar */
+    .editor-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1.5rem;
+      background: var(--accent);
+      border-bottom: 2px solid var(--accent);
+      height: 52px;
+      color: var(--bg-primary);
+    }
+    .editor-topbar-left { display: flex; align-items: center; gap: 1rem; }
+    .editor-home-btn {
+      color: var(--bg-primary);
+      text-decoration: none;
+      font-family: inherit;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+    }
+    .editor-home-btn:hover { text-decoration: underline; }
+    .editor-title {
+      color: var(--bg-primary);
+      font-weight: 600;
+      font-size: 0.85rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+    .editor-actions { display: flex; gap: 0; }
+    .editor-actions button {
+      padding: 0.45rem 1rem;
+      border: 1px solid var(--bg-primary);
+      color: var(--bg-primary);
+      background: transparent;
+      font-family: inherit;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      transition: all 0.1s;
+      border-right: none;
+    }
+    .editor-actions button:last-child { border-right: 1px solid var(--bg-primary); }
+    .editor-actions button:hover {
+      background: var(--bg-primary);
+      color: var(--accent);
+    }
+
+    /* Metadata */
+    .editor-meta {
+      display: flex;
+      gap: 0;
+      padding: 0.5rem 1.5rem;
+      background: var(--bg-surface);
+      border-bottom: 2px solid var(--border-default);
+      flex-wrap: wrap;
+    }
+    .editor-meta input, .editor-meta textarea {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      color: var(--text-body);
+      padding: 0.35rem 0.6rem;
+      font-family: inherit;
+      font-size: 0.78rem;
+    }
+    .editor-meta input:focus, .editor-meta textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .editor-meta input::placeholder, .editor-meta textarea::placeholder { color: var(--text-faint); }
+    #metaTitle { flex: 2; min-width: 200px; }
+    #metaCategory { flex: 1; min-width: 120px; }
+    #metaTags { flex: 1; min-width: 150px; }
+    #metaOrder { width: 80px; }
+    #metaDescription { flex: 2; min-width: 200px; resize: vertical; }
+
+    /* Toolbar */
+    .editor-toolbar {
+      display: flex;
+      gap: 0;
+      padding: 0.35rem 1.5rem;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-default);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .editor-toolbar button {
+      padding: 0.3rem 0.6rem;
+      border: 1px solid var(--border-default);
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.1s;
+      margin-right: -1px;
+    }
+    .editor-toolbar button:hover {
+      background: var(--accent);
+      color: var(--bg-primary);
+      border-color: var(--accent);
+      z-index: 1;
+    }
+    .toolbar-sep {
+      width: 1px;
+      height: 1.2rem;
+      background: var(--border-default);
+      margin: 0 0.4rem;
+    }
+
+    /* Split pane */
+    .editor-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      flex: 1;
+      min-height: 0;
+    }
+    .editor-pane {
+      display: flex;
+      flex-direction: column;
+      min-height: 400px;
+    }
+    .editor-pane:first-child {
+      border-right: 1px solid var(--border-default);
+    }
+    #editorSource {
+      flex: 1;
+      background: var(--bg-primary);
+      border: none;
+      color: var(--text-body);
+      padding: 1rem;
+      font-family: inherit;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      resize: none;
+      tab-size: 2;
+    }
+    #editorSource:focus { outline: none; }
+    #editorSource::placeholder { color: var(--text-faint); }
+    .editor-preview {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      color: var(--text-body);
+    }
+    .editor-preview h1, .editor-preview h2, .editor-preview h3,
+    .editor-preview h4, .editor-preview h5, .editor-preview h6 {
+      color: var(--text-primary);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .editor-preview h1 { font-size: 1.5rem; border-bottom: 1px solid var(--border-default); padding-bottom: 0.4rem; }
+    .editor-preview h2 { font-size: 1.2rem; }
+    .editor-preview h3 { font-size: 1rem; }
+    .editor-preview p { margin-bottom: 0.8rem; }
+    .editor-preview ul, .editor-preview ol { padding-left: 1.5rem; margin-bottom: 0.8rem; }
+    .editor-preview code {
+      background: var(--code-bg);
+      padding: 0.1rem 0.3rem;
+      font-size: 0.85em;
+      border: 1px solid var(--border-subtle);
+    }
+    .editor-preview pre {
+      background: var(--code-bg);
+      border-left: 3px solid var(--accent);
+      padding: 0.7rem;
+      overflow-x: auto;
+      margin: 0.8rem 0;
+    }
+    .editor-preview pre code { background: none; border: none; padding: 0; }
+    .editor-preview blockquote {
+      border-left: 3px solid var(--text-muted);
+      background: var(--bg-surface);
+      padding: 0.5rem 0.8rem;
+      margin: 0.8rem 0;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+    .editor-preview table { width: 100%; border-collapse: collapse; margin: 0.8rem 0; border: 1px solid var(--border-default); }
+    .editor-preview th {
+      background: var(--accent);
+      color: var(--bg-primary);
+      border-bottom: 1px solid var(--accent);
+      text-transform: uppercase;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      padding: 0.4rem 0.6rem;
+      text-align: left;
+    }
+    .editor-preview td { border: 1px solid var(--border-default); padding: 0.4rem 0.6rem; }
+    .editor-preview img { max-width: 100%; border: 1px solid var(--border-default); }
+
+    /* Media panel */
+    .editor-media {
+      padding: 0.5rem 1.5rem;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-default);
+    }
+    .editor-media h3 {
+      color: var(--text-muted);
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      margin-bottom: 0.3rem;
+    }
+    .media-dropzone {
+      border: 1px dashed var(--border-default);
+      padding: 0.6rem;
+      text-align: center;
+      color: var(--text-faint);
+      font-size: 0.72rem;
+      transition: all 0.1s;
+    }
+    .media-dropzone--active {
+      border-color: var(--accent);
+      color: var(--text-primary);
+      background: rgba(17, 17, 17, 0.05);
+    }
+    .media-browse {
+      color: var(--text-primary);
+      cursor: pointer;
+      text-decoration: underline;
+      font-weight: 600;
+    }
+    .media-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      margin-top: 0.3rem;
+    }
+    .media-item {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.5rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      font-size: 0.68rem;
+    }
+    .media-remove {
+      background: none;
+      border: none;
+      color: var(--accent-red);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.68rem;
+    }
+
+    /* Drafts */
+    .editor-drafts {
+      padding: 0.5rem 1.5rem;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-default);
+    }
+    .editor-drafts h3 {
+      color: var(--text-muted);
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      margin-bottom: 0.3rem;
+    }
+    .draft-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.25rem 0;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.72rem;
+    }
+    .draft-item-name {
+      color: var(--text-body);
+      cursor: pointer;
+    }
+    .draft-item-name:hover { color: var(--text-primary); text-decoration: underline; }
+    .draft-item-delete {
+      background: none;
+      border: none;
+      color: var(--text-faint);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.65rem;
+    }
+    .draft-item-delete:hover { color: var(--accent-red); }
+
+    /* Footer */
+    .editor-footer {
+      padding: 0.8rem 1.5rem;
+      border-top: 1px solid var(--border-default);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    .editor-footer p { margin-bottom: 0.2rem; }
+
+    @media (max-width: 768px) {
+      .editor-split { grid-template-columns: 1fr; }
+      .editor-pane:first-child { border-right: none; border-bottom: 1px solid var(--border-default); }
+      .editor-meta { flex-direction: column; }
+    }
+    .emoji-black {
+      font-family: 'Noto Emoji', sans-serif;
+      font-style: normal;
+    }
+  </style>
+</head>
+<body>
+  <header class="editor-topbar">
+    <div class="editor-topbar-left">
+      <a href="/docs/wiki/" class="editor-home-btn">&laquo; HOME</a>
+      <span class="editor-title">WIKI ENGINE EDITOR</span>
+    </div>
+    <div class="editor-actions">
+      <button id="btnImport">IMPORT ZIP</button>
+      <button id="btnExport">EXPORT ZIP</button>
+      <button id="btnSave">SAVE DRAFT</button>
+    </div>
+  </header>
+
+  <section class="editor-meta">
+    <input type="text" id="metaTitle" placeholder="Page Title" title="Display title for the page">
+    <input type="text" id="metaCategory" placeholder="Category" list="categoryList" title="Category folder to organize pages">
+    <datalist id="categoryList"></datalist>
+    <input type="text" id="metaTags" placeholder="Tags (comma-separated)" title="Searchable keywords for this page">
+    <input type="number" id="metaOrder" placeholder="Order" title="Sort order in sidebar within category (lower = higher)" value="999">
+    <textarea id="metaDescription" placeholder="Description" rows="2" title="Short summary shown in search results"></textarea>
+  </section>
+
+  <section class="editor-toolbar">
+    <button data-action="bold" title="Bold"><b>B</b></button>
+    <button data-action="italic" title="Italic"><i>I</i></button>
+    <button data-action="strikethrough" title="Strikethrough"><s>S</s></button>
+    <span class="toolbar-sep"></span>
+    <button data-action="h1" title="Heading 1">H1</button>
+    <button data-action="h2" title="Heading 2">H2</button>
+    <button data-action="h3" title="Heading 3">H3</button>
+    <button data-action="h4" title="Heading 4">H4</button>
+    <span class="toolbar-sep"></span>
+    <button data-action="ul" title="Unordered List">UL</button>
+    <button data-action="ol" title="Ordered List">OL</button>
+    <button data-action="task" title="Task List">TASK</button>
+    <span class="toolbar-sep"></span>
+    <button data-action="link" title="Link">LINK</button>
+    <button data-action="image" title="Image">IMG</button>
+    <button data-action="code" title="Code Block">&lt;/&gt;</button>
+    <button data-action="table" title="Table">TBL</button>
+    <button data-action="admonition" title="Admonition">NOTE</button>
+    <button data-action="footnote" title="Footnote">FN</button>
+    <button data-action="monoemoji" title="Monochrome Emoji">:m:</button>
+  </section>
+
+  <section class="editor-split">
+    <div class="editor-pane">
+      <textarea id="editorSource" spellcheck="false" placeholder="Write your markdown here..."></textarea>
+    </div>
+    <div class="editor-pane">
+      <div id="editorPreview" class="editor-preview"></div>
+    </div>
+  </section>
+
+  <section class="editor-media">
+    <h3 title="Upload images and files to bundle with your page export. Reference them in markdown as ![alt](filename.png) to see them in the live preview.">MEDIA</h3>
+    <div id="mediaDropZone" class="media-dropzone">
+      Drop files here or <label for="mediaFileInput" class="media-browse">browse</label>
+      <input type="file" id="mediaFileInput" multiple hidden>
+    </div>
+    <div id="mediaList" class="media-list"></div>
+  </section>
+
+  <aside class="editor-drafts" id="draftsPanel">
+    <h3>MY DRAFTS</h3>
+    <div id="draftsList"></div>
+  </aside>
+
+  <footer class="editor-footer">
+    <p>1. Export your page as a zip</p>
+    <p>2. Share it in the Discord #wiki-submissions channel, OR</p>
+    <p>3. If you have repo access, place the .md and media folder into
+       wiki-content/pages/&lt;category&gt;/ and commit</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it@14/dist/markdown-it.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      var md = window.markdownit({ html: true, linkify: true });
+      var mediaFiles = new Map();
+      var mediaUrls = new Map();
+
+      // Monochrome emoji plugin for editor preview
+      (function () {
+        var EMOJI_RE = /:m:([a-z0-9_+-]+):/g;
+      // Emoji map loaded from lib/emoji-map-embed.js
+      // {EMOJI_MAP_PLACEHOLDER}
+        md.core.ruler.after("inline", "monotone-emoji", function (state) {
+          var blocks = state.tokens;
+          for (var i = 0; i < blocks.length; i++) {
+            if (blocks[i].type !== "inline") continue;
+            var inline = blocks[i];
+            if (!inline.children) continue;
+            var tokens = inline.children;
+            for (var j = 0; j < tokens.length; j++) {
+              if (tokens[j].type !== "text") continue;
+              var text = tokens[j].content;
+              if (!EMOJI_RE.test(text)) continue;
+              EMOJI_RE.lastIndex = 0;
+              var parts = text.split(/:(m:[a-z0-9_+-]+):/);
+              var newTokens = [];
+              for (var k = 0; k < parts.length; k++) {
+                if (k % 2 === 0) {
+                  if (parts[k]) {
+                    var t = new state.Token("text", "", 0);
+                    t.content = parts[k];
+                    newTokens.push(t);
+                  }
+                } else {
+                  var match = parts[k].match(/^m:([a-z0-9_+-]+)$/);
+                  if (match) {
+                    var ch = emojiMap[match[1]] || "\u{2753}";
+                    var t2 = new state.Token("html_inline", "", 0);
+                    t2.content = '<span class="emoji-black">' + ch + '</span>';
+                    newTokens.push(t2);
+                  }
+                }
+              }
+              inline.children = tokens.slice(0, j).concat(newTokens, tokens.slice(j + 1));
+              j += newTokens.length - 1;
+            }
+          }
+        });
+      })();
+
+      // --- Toolbar ---
+      var insertions = {
+        bold: { before: "**", after: "**" },
+        italic: { before: "_", after: "_" },
+        strikethrough: { before: "~~", after: "~~" },
+        h1: { before: "# ", after: "", line: true },
+        h2: { before: "## ", after: "", line: true },
+        h3: { before: "### ", after: "", line: true },
+        h4: { before: "#### ", after: "", line: true },
+        ul: { before: "- ", after: "", line: true },
+        ol: { before: "1. ", after: "", line: true },
+        task: { before: "- [ ] ", after: "", line: true },
+        link: { before: "[", after: "](url)" },
+        image: { before: "![alt](", after: ")" },
+        code: { before: "```\n", after: "\n```" },
+        table: { before: "\n| Header | Header |\n|--------|--------|\n| Cell   | Cell   |\n", after: "" },
+        admonition: { before: "> [!NOTE]\n> ", after: "" },
+        monoemoji: { before: ":m:", after: ":" },
+        footnote: { special: true }
+      };
+
+      var toolbarBtns = document.querySelectorAll(".editor-toolbar button");
+      for (var i = 0; i < toolbarBtns.length; i++) {
+        toolbarBtns[i].addEventListener("click", function () {
+          var action = this.dataset.action;
+          var ta = document.getElementById("editorSource");
+          var start = ta.selectionStart;
+          var end = ta.selectionEnd;
+          var selected = ta.value.substring(start, end);
+          var ins = insertions[action];
+          if (!ins) return;
+
+          // Special handling for footnotes
+          if (action === "footnote") {
+            var fnNum = (ta.value.match(/\[\^[a-zA-Z0-9_-]+\]/g) || []).length / 2 + 1;
+            var fnLabel = "note" + fnNum;
+            var refText = "[^" + fnLabel + "]";
+            var defText = "\n\n[^" + fnLabel + "]: Enter citation here";
+            ta.setRangeText(refText + defText, start, end, "end");
+            ta.focus();
+            updatePreview();
+            return;
+          }
+
+          if (ins.line) {
+            var lineStart = ta.value.lastIndexOf("\n", start - 1) + 1;
+            ta.setRangeText(ins.before, lineStart, lineStart, "start");
+          } else {
+            ta.setRangeText(ins.before + selected + ins.after, start, end, "select");
+          }
+          ta.focus();
+          updatePreview();
+        });
+      }
+
+      // --- Preview ---
+      var previewTimeout;
+      function updatePreview() {
+        clearTimeout(previewTimeout);
+        previewTimeout = setTimeout(function () {
+          var source = document.getElementById("editorSource").value;
+          var html = md.render(source);
+          var temp = document.createElement("div");
+          temp.innerHTML = html;
+          var imgs = temp.querySelectorAll("img");
+          for (var i = 0; i < imgs.length; i++) {
+            var src = imgs[i].getAttribute("src");
+            if (mediaUrls.has(src)) {
+              imgs[i].src = mediaUrls.get(src);
+            }
+          }
+          document.getElementById("editorPreview").innerHTML = temp.innerHTML;
+        }, 300);
+      }
+      document.getElementById("editorSource").addEventListener("input", updatePreview);
+
+      // Tab key support
+      document.getElementById("editorSource").addEventListener("keydown", function (e) {
+        if (e.key === "Tab") {
+          e.preventDefault();
+          var start = this.selectionStart;
+          this.setRangeText("  ", start, start, "end");
+        }
+      });
+
+      // --- Media ---
+      document.getElementById("mediaFileInput").addEventListener("change", function (e) {
+        for (var i = 0; i < e.target.files.length; i++) {
+          var file = e.target.files[i];
+          mediaFiles.set(file.name, file);
+          mediaUrls.set(file.name, URL.createObjectURL(file));
+        }
+        renderMediaList();
+        updatePreview();
+      });
+
+      var dropZone = document.getElementById("mediaDropZone");
+      dropZone.addEventListener("dragover", function (e) {
+        e.preventDefault();
+        dropZone.classList.add("media-dropzone--active");
+      });
+      dropZone.addEventListener("dragleave", function () {
+        dropZone.classList.remove("media-dropzone--active");
+      });
+      dropZone.addEventListener("drop", function (e) {
+        e.preventDefault();
+        dropZone.classList.remove("media-dropzone--active");
+        for (var i = 0; i < e.dataTransfer.files.length; i++) {
+          var file = e.dataTransfer.files[i];
+          mediaFiles.set(file.name, file);
+          mediaUrls.set(file.name, URL.createObjectURL(file));
+        }
+        renderMediaList();
+        updatePreview();
+      });
+
+      function renderMediaList() {
+        var list = document.getElementById("mediaList");
+        list.innerHTML = "";
+        mediaFiles.forEach(function (blob, name) {
+          var item = document.createElement("div");
+          item.className = "media-item";
+          item.innerHTML = "<span>" + name + "</span><span>" + (blob.size / 1024).toFixed(1) + "KB</span><button class='media-remove' data-name='" + name + "'>X</button>";
+          list.appendChild(item);
+        });
+        var removeBtns = list.querySelectorAll(".media-remove");
+        for (var j = 0; j < removeBtns.length; j++) {
+          removeBtns[j].addEventListener("click", function () {
+            var name = this.dataset.name;
+            if (mediaUrls.has(name)) {
+              URL.revokeObjectURL(mediaUrls.get(name));
+              mediaUrls.delete(name);
+            }
+            mediaFiles.delete(name);
+            renderMediaList();
+            updatePreview();
+          });
+        }
+      }
+
+      // --- Auto-save ---
+      function getDraftKey() {
+        var title = document.getElementById("metaTitle").value.trim();
+        return "wiki_draft_" + (title || "untitled");
+      }
+
+      function saveDraft() {
+        var draft = {
+          title: document.getElementById("metaTitle").value,
+          category: document.getElementById("metaCategory").value,
+          description: document.getElementById("metaDescription").value,
+          tags: document.getElementById("metaTags").value,
+          order: document.getElementById("metaOrder").value,
+          markdown: document.getElementById("editorSource").value,
+          savedAt: new Date().toISOString()
+        };
+        localStorage.setItem(getDraftKey(), JSON.stringify(draft));
+      }
+
+      setInterval(saveDraft, 10000);
+
+      document.getElementById("btnSave").addEventListener("click", function () {
+        saveDraft();
+        renderDraftsList();
+      });
+
+      function loadDraft(key) {
+        var raw = localStorage.getItem(key);
+        if (!raw) return;
+        var draft = JSON.parse(raw);
+        document.getElementById("metaTitle").value = draft.title || "";
+        document.getElementById("metaCategory").value = draft.category || "";
+        document.getElementById("metaDescription").value = draft.description || "";
+        document.getElementById("metaTags").value = draft.tags || "";
+        document.getElementById("metaOrder").value = draft.order || "999";
+        document.getElementById("editorSource").value = draft.markdown || "";
+        updatePreview();
+      }
+
+      function deleteDraft(key) {
+        localStorage.removeItem(key);
+        renderDraftsList();
+      }
+
+      function renderDraftsList() {
+        var list = document.getElementById("draftsList");
+        list.innerHTML = "";
+        var keys = [];
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          if (k && k.indexOf("wiki_draft_") === 0) keys.push(k);
+        }
+        if (keys.length === 0) {
+          list.innerHTML = '<div style="color: var(--text-faint); font-size: 0.7rem;">No drafts saved</div>';
+          return;
+        }
+        for (var j = 0; j < keys.length; j++) {
+          var key = keys[j];
+          var draft = JSON.parse(localStorage.getItem(key) || "{}");
+          var name = draft.title || key.replace("wiki_draft_", "");
+          var item = document.createElement("div");
+          item.className = "draft-item";
+          item.innerHTML = '<span class="draft-item-name">' + name + '</span><button class="draft-item-delete" data-key="' + key + '">X</button>';
+          list.appendChild(item);
+        }
+        var nameEls = list.querySelectorAll(".draft-item-name");
+        for (var n = 0; n < nameEls.length; n++) {
+          nameEls[n].addEventListener("click", function () {
+            var parent = this.parentElement;
+            var btn = parent.querySelector(".draft-item-delete");
+            loadDraft(btn.dataset.key);
+          });
+        }
+        var delBtns = list.querySelectorAll(".draft-item-delete");
+        for (var d = 0; d < delBtns.length; d++) {
+          delBtns[d].addEventListener("click", function () {
+            deleteDraft(this.dataset.key);
+          });
+        }
+      }
+
+      renderDraftsList();
+
+      // --- Export ZIP ---
+      document.getElementById("btnExport").addEventListener("click", function () {
+        var title = document.getElementById("metaTitle").value.trim() || "untitled";
+        var slug = title.toLowerCase().replace(/[^\w]+/g, "-").replace(/(^-|-$)/g, "");
+
+        var tags = document.getElementById("metaTags").value
+          .split(",")
+          .map(function (t) { return '"' + t.trim() + '"'; })
+          .filter(function (t) { return t !== '""'; })
+          .join(", ");
+
+        var frontMatter = "---\n" +
+          'title: "' + document.getElementById("metaTitle").value + '"\n' +
+          'category: "' + (document.getElementById("metaCategory").value || "uncategorized") + '"\n' +
+          'description: "' + document.getElementById("metaDescription").value + '"\n' +
+          "tags: [" + tags + "]\n" +
+          "order: " + (document.getElementById("metaOrder").value || 999) + "\n" +
+          "---\n\n";
+
+        var zip = new JSZip();
+        zip.file(slug + ".md", frontMatter + document.getElementById("editorSource").value);
+
+        if (mediaFiles.size > 0) {
+          var mediaFolder = zip.folder(slug);
+          mediaFiles.forEach(function (blob, name) {
+            mediaFolder.file(name, blob);
+          });
+        }
+
+        zip.generateAsync({ type: "blob" }).then(function (content) {
+          var url = URL.createObjectURL(content);
+          var a = document.createElement("a");
+          a.href = url;
+          a.download = slug + ".zip";
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+      });
+
+      // --- Import ZIP ---
+      document.getElementById("btnImport").addEventListener("click", function () {
+        var input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".zip";
+        input.addEventListener("change", function (e) {
+          var file = e.target.files[0];
+          if (!file) return;
+          JSZip.loadAsync(file).then(function (zip) {
+            var mdFile = Object.keys(zip.files).find(function (f) { return f.endsWith(".md"); });
+            if (!mdFile) return;
+
+            zip.file(mdFile).async("string").then(function (mdContent) {
+              var parsed = parseFrontMatter(mdContent);
+              document.getElementById("metaTitle").value = parsed.frontMatter.title || "";
+              document.getElementById("metaCategory").value = parsed.frontMatter.category || "";
+              document.getElementById("metaDescription").value = parsed.frontMatter.description || "";
+              document.getElementById("metaTags").value = (parsed.frontMatter.tags || []).join(", ");
+              document.getElementById("metaOrder").value = parsed.frontMatter.order || 999;
+              document.getElementById("editorSource").value = parsed.content;
+              updatePreview();
+
+              mediaFiles.clear();
+              mediaUrls.forEach(function (url) { URL.revokeObjectURL(url); });
+              mediaUrls.clear();
+              var baseName = mdFile.replace(".md", "");
+              var entries = Object.entries(zip.files);
+              var promises = [];
+              for (var i = 0; i < entries.length; i++) {
+                var path = entries[i][0];
+                var zipEntry = entries[i][1];
+                if (!zipEntry.dir && path.startsWith(baseName + "/")) {
+                  var fileName = path.split("/").pop();
+                  promises.push(zipEntry.async("blob").then(function (blob) {
+                    return { name: fileName, blob: blob };
+                  }));
+                }
+              }
+              Promise.all(promises).then(function (results) {
+                for (var j = 0; j < results.length; j++) {
+                  mediaFiles.set(results[j].name, results[j].blob);
+                  mediaUrls.set(results[j].name, URL.createObjectURL(results[j].blob));
+                }
+                renderMediaList();
+                updatePreview();
+              });
+            });
+          });
+        });
+        input.click();
+      });
+
+      function parseFrontMatter(text) {
+        var match = text.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+        if (!match) return { frontMatter: {}, content: text };
+        var fm = {};
+        var lines = match[1].split("\n");
+        for (var i = 0; i < lines.length; i++) {
+          var colonIdx = lines[i].indexOf(":");
+          if (colonIdx > 0) {
+            var key = lines[i].substring(0, colonIdx).trim();
+            var val = lines[i].substring(colonIdx + 1).trim().replace(/^"|"$/g, "");
+            fm[key] = val;
+          }
+        }
+        if (fm.tags) {
+          fm.tags = fm.tags.replace(/[\[\]]/g, "").split(",").map(function (t) { return t.trim(); });
+        }
+        return { frontMatter: fm, content: match[2] };
+      }
+    })();
+  </script>
+</body>
+</html>
