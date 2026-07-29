@@ -98,11 +98,23 @@
   // Sidebar toggle
   var sidebarToggle = document.getElementById("sidebarToggle");
   var sidebar = document.getElementById("sidebar");
+  var topbarEl = document.querySelector(".topbar");
   if (sidebarToggle && sidebar) {
     sidebarToggle.addEventListener("click", function () {
       sidebar.classList.toggle("sidebar--open");
     });
   }
+
+  // Keep sidebar top/height in sync with actual topbar height (dynamic on mobile)
+  function adjustSidebarTop() {
+    if (sidebar && topbarEl) {
+      var h = topbarEl.offsetHeight;
+      sidebar.style.top = h + "px";
+      sidebar.style.height = "calc(100vh - " + h + "px)";
+    }
+  }
+  adjustSidebarTop();
+  window.addEventListener("resize", adjustSidebarTop);
 
   // Category collapse
   var headers = document.querySelectorAll(".sidebar-category-header");
