@@ -431,6 +431,7 @@ img { max-width: 100%; border: 1px solid var(--border-default); }
   .wiki-content { padding: 1.5rem 1rem; border: none; max-width: none; margin: 0; }
   .topbar-right { gap: 0.5rem; }
   .search-input { width: 130px; }
+  .pulse-widget { display: none; }
   .wiki-footer {
     grid-template-columns: 1fr;
     text-align: center;
