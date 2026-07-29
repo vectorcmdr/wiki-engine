@@ -368,6 +368,7 @@ function getBaseTemplate(config, { pageTitle, breadcrumbs, sidebarHtml, contentH
 <body>
   <header class="topbar">
     <div class="topbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle">&#9776;</button>
       <a href="${base}/" class="topbar-brand">
         <img src="${base}/assets/logo_small.png" alt="" class="topbar-avatar" onerror="this.style.display='none'">
         <span>${config.wikiName}</span>
@@ -386,7 +387,6 @@ function getBaseTemplate(config, { pageTitle, breadcrumbs, sidebarHtml, contentH
 
   <div class="wiki-layout">
     <aside class="sidebar" id="sidebar">
-      <button class="sidebar-toggle" id="sidebarToggle">&#9776;</button>
       ${sidebarHtml}
     </aside>
 

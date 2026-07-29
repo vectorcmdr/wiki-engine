@@ -1,6 +1,6 @@
-/* ========================================================
-   WIKI ENGINE - Documentation Engine Theme
-   ======================================================== */
+/* =============================================
+   WIKI ENGINE - Cassette Futurism Dossier Theme
+   ============================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap');
 
@@ -426,9 +426,29 @@ img { max-width: 100%; border: 1px solid var(--border-default); }
   .sidebar.sidebar--open { left: 0; }
   .sidebar-toggle { display: block; background: none; border: none; color: var(--bg-primary); font-size: 1.2rem; cursor: pointer; padding: 0.3rem; }
   .wiki-layout { grid-template-columns: 1fr; }
-  .wiki-content { padding: 1.5rem 1rem; border: none; }
+  .wiki-content { padding: 1.5rem 1rem; border: none; max-width: none; margin: 0; }
   .topbar-right { gap: 0.5rem; }
   .search-input { width: 130px; }
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: var(--topbar-height);
+    padding: 0.4rem 0.75rem;
+    gap: 0.35rem;
+  }
+  .topbar-left { flex: 1 1 auto; }
+  .topbar-right {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  .topbar-search { flex: 1 1 100%; }
+  .search-input { width: 100%; }
+  .topbar-nav { flex: 1 1 100%; justify-content: flex-start; }
+  .nav-link { padding: 0.35rem 0.6rem; font-size: 0.65rem; }
 }
 
 /* --- Highlight.js Overrides --- */
